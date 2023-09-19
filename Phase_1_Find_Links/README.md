@@ -1,0 +1,1 @@
+run_all_parsers.py runs all scripts in a folder - to add a new parser add a folder  with the source name and put a script which output goes  to the same place as for existing ones
