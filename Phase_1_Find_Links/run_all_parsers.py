@@ -29,7 +29,11 @@ def merge_files():
                 if onion_link not in merged_data:
                     merged_data[onion_link] = row
                 else:
-                    merged_data[onion_link].extend(row[1:])
+                    # Check if the "Additional Data..." from the current row is already in the merged data
+                    # If not, add it
+                    for additional_data in row[1:]:
+                        if additional_data not in merged_data[onion_link]:
+                            merged_data[onion_link].append(additional_data)
 
     for csv_file in glob.glob("*.csv"):
         if not csv_file.startswith("merged_onion_links_"):

@@ -5,13 +5,13 @@ import time
 import os
 
 # Define a regex pattern for onion links
-onion_pattern = re.compile(r'\b[a-z2-7]{16,56}\.onion\b')
+onion_pattern = re.compile(r'\b[a-z2-7]{16,56}\.(onion|i2p)\b')
 
 # Function to save data to a CSV file
 def save_to_csv(data, filename):
-    with open(filename, 'a', newline='') as file:  # Use 'a' to append to the same file
+    file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+    with open(file_path, 'a', newline='') as file:
         writer = csv.writer(file)
-        # Write the data
         writer.writerows(data)
 
 # Your Reddit script application credentials
@@ -23,9 +23,8 @@ user_agent = 'macos:YOUR_REDDIT_APPLICATION_NAME:v1.0 (by /u/YOUR_REDDIT_ACCOUNT
 print("Authenticating with Reddit...")
 reddit = praw.Reddit(client_id=client_id, client_secret=client_secret, user_agent=user_agent)
 
-# Access the subreddit
-print("Accessing subreddit...")
-subreddit = reddit.subreddit('onions')
+# List of subreddits to process
+subreddits_to_process = ['onions', ]
 
 # Calculate sleep time for 100 API calls per minute
 sleep_time = 65 / 100
@@ -43,46 +42,39 @@ output_file = 'Reddit_onion_links.csv'
 if not os.path.exists(output_file):
     with open(output_file, 'w', newline='') as file:
         writer = csv.writer(file)
-        # Write the header
         writer.writerow(['Onion Link', 'Source Post Name', 'Source URL'])
 
-# Iterate through the posts
-print("Extracting onion links, source post names, and source URLs...")
-for submission in subreddit.new(limit=10):  # You can change the limit
-    post_count += 1
-    print(f"Processing post {post_count}...")
+# Iterate through each subreddit in the list
+for subreddit_name in subreddits_to_process:
+    print(f"Accessing subreddit: {subreddit_name}")
+    subreddit = reddit.subreddit(subreddit_name)
 
-    # Extract the title and URL of the post
-    post_title = submission.title
-    post_url = submission.url
-    print(f"Post Title: {post_title}")
-    print(f"Post URL: {post_url}")
+    print("Extracting onion links, source post names, and source URLs...")
+    for submission in subreddit.new(limit=990):  # You can change the limit
+        post_count += 1
+        print(f"Processing post {post_count} from subreddit {subreddit_name}...")
 
-    # Lists to store data for this post
-    post_onion_links = []
+        post_title = submission.title
+        post_url = submission.url
+        post_onion_links = []
 
-    # Check the post text
-    text = submission.selftext
-    matches = onion_pattern.findall(text)
-    for match in matches:
-        if match not in unique_onion_links:
-            unique_onion_links.add(match)
-            post_onion_links.append((match, post_title, post_url))
-
-    # Check the post comments
-    submission.comments.replace_more(limit=0)
-    for comment in submission.comments.list():
-        text = comment.body
+        text = submission.selftext
         matches = onion_pattern.findall(text)
         for match in matches:
             if match not in unique_onion_links:
                 unique_onion_links.add(match)
                 post_onion_links.append((match, post_title, post_url))
 
-    # Save the data for this post to the same CSV file
-    save_to_csv(post_onion_links, output_file)
+        submission.comments.replace_more(limit=0)
+        for comment in submission.comments.list():
+            text = comment.body
+            matches = onion_pattern.findall(text)
+            for match in matches:
+                if match not in unique_onion_links:
+                    unique_onion_links.add(match)
+                    post_onion_links.append((match, post_title, post_url))
 
-    # Sleep to avoid hitting API rate limits
-    time.sleep(sleep_time)
+        save_to_csv(post_onion_links, output_file)
+        time.sleep(sleep_time)
 
 print("Extraction completed and data saved to onion_links.csv.")
