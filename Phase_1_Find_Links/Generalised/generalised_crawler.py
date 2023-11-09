@@ -56,7 +56,7 @@ class WebsiteCrawler(threading.Thread):
 def main():
     # Create a list of website URLs
     website_urls = [
-        "https://darknetlive.com/",
+        "https://darknetlive.com/", "https://tor.taxi/", "https://dark.fail/"
     ]
 
     # Create a regex pattern
